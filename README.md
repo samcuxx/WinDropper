@@ -2,9 +2,15 @@
   <img src="./public/icons/icon.png" alt="WinDropper Logo" width="200">
 </p>
 
-# WinDropper
+<h1 align="center">WinDropper</h1>
 
+<p align="center">
 WinDropper is a Windows alternative to macOS Dropover, providing a convenient way to temporarily store files for easy organization and movement across different locations.
+</p>
+
+<p align="center">
+  <img src="screenshots/windropper-screenshot.png" alt="WinDropper Screenshot">
+</p>
 
 ## Features
 
