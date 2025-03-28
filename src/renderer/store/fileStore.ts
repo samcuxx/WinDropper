@@ -22,6 +22,7 @@ export interface FileInfo {
 
 interface FileState {
   files: FileInfo[];
+  selectedFiles: Set<string>; // Store IDs of selected files
   isLoading: boolean;
   error: string | null;
   setFiles: (files: FileInfo[]) => void;
@@ -29,16 +30,26 @@ interface FileState {
   removeFile: (id: string) => void;
   clearFiles: () => void;
   getFilesByType: () => { [key in FileType]?: FileInfo[] };
+  // Selection management
+  selectFile: (id: string) => void;
+  deselectFile: (id: string) => void;
+  toggleFileSelection: (id: string) => void;
+  selectAllFiles: () => void;
+  deselectAllFiles: () => void;
+  getSelectedFiles: () => FileInfo[];
+  getSelectedFilePaths: () => string[];
 }
 
 export const useFileStore = create<FileState>((set, get) => ({
   files: [],
+  selectedFiles: new Set<string>(),
   isLoading: false,
   error: null,
 
   setFiles: (files) =>
     set({
       files: Array.isArray(files) ? files : [],
+      selectedFiles: new Set<string>(), // Clear selection when files change
       isLoading: false,
       error: null,
     }),
@@ -63,11 +74,24 @@ export const useFileStore = create<FileState>((set, get) => ({
     }),
 
   removeFile: (id) =>
-    set((state) => ({
-      files: state.files.filter((file) => file.id !== id),
-    })),
+    set((state) => {
+      // Remove from selection if needed
+      const newSelection = new Set(state.selectedFiles);
+      newSelection.delete(id);
 
-  clearFiles: () => set({ files: [], isLoading: false, error: null }),
+      return {
+        files: state.files.filter((file) => file.id !== id),
+        selectedFiles: newSelection,
+      };
+    }),
+
+  clearFiles: () =>
+    set({
+      files: [],
+      selectedFiles: new Set<string>(),
+      isLoading: false,
+      error: null,
+    }),
 
   // Group files by type
   getFilesByType: () => {
@@ -88,5 +112,51 @@ export const useFileStore = create<FileState>((set, get) => ({
       console.error("Error in getFilesByType:", error);
       return {};
     }
+  },
+
+  // Selection management functions
+  selectFile: (id) =>
+    set((state) => {
+      const newSelection = new Set(state.selectedFiles);
+      newSelection.add(id);
+      return { selectedFiles: newSelection };
+    }),
+
+  deselectFile: (id) =>
+    set((state) => {
+      const newSelection = new Set(state.selectedFiles);
+      newSelection.delete(id);
+      return { selectedFiles: newSelection };
+    }),
+
+  toggleFileSelection: (id) =>
+    set((state) => {
+      const newSelection = new Set(state.selectedFiles);
+      if (newSelection.has(id)) {
+        newSelection.delete(id);
+      } else {
+        newSelection.add(id);
+      }
+      return { selectedFiles: newSelection };
+    }),
+
+  selectAllFiles: () =>
+    set((state) => {
+      const allIds = state.files.map((file) => file.id);
+      return { selectedFiles: new Set(allIds) };
+    }),
+
+  deselectAllFiles: () => set({ selectedFiles: new Set<string>() }),
+
+  getSelectedFiles: () => {
+    const { files, selectedFiles } = get();
+    return files.filter((file) => selectedFiles.has(file.id));
+  },
+
+  getSelectedFilePaths: () => {
+    const { files, selectedFiles } = get();
+    return files
+      .filter((file) => selectedFiles.has(file.id))
+      .map((file) => file.path);
   },
 }));

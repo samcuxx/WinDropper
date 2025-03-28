@@ -4,12 +4,25 @@ import { FileInfo, FileType } from "../store/fileStore";
 
 interface FileItemProps {
   file: FileInfo;
+  isSelected: boolean;
+  onSelect: (id: string) => void;
   onContextMenu: (e: React.MouseEvent) => void;
 }
 
-export const FileItem: React.FC<FileItemProps> = ({ file, onContextMenu }) => {
+export const FileItem: React.FC<FileItemProps> = ({
+  file,
+  isSelected,
+  onSelect,
+  onContextMenu,
+}) => {
   const [isDragging, setIsDragging] = useState(false);
   const fileRef = useRef<HTMLDivElement>(null);
+
+  // Handle file selection
+  const handleSelect = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSelect(file.id);
+  };
 
   // Format file size
   const formatFileSize = (bytes: number): string => {
@@ -137,6 +150,10 @@ export const FileItem: React.FC<FileItemProps> = ({ file, onContextMenu }) => {
       ref={fileRef}
       className={`file-item flex items-center p-2 rounded-md draggable ${
         isDragging ? "dragging" : ""
+      } ${
+        isSelected
+          ? "bg-windropper-100 dark:bg-windropper-900/30 border border-windropper-500"
+          : ""
       }`}
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
@@ -146,6 +163,18 @@ export const FileItem: React.FC<FileItemProps> = ({ file, onContextMenu }) => {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
+      {/* Selection checkbox */}
+      <div className="mr-2 flex-shrink-0">
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={() => {}} // Controlled by parent
+          onClick={handleSelect}
+          className="h-4 w-4 text-windropper-500 rounded focus:ring-windropper-500 border-gray-300 cursor-pointer"
+          aria-label={`Select ${file.name}`}
+        />
+      </div>
+
       <div className={`flex-shrink-0 mr-3 ${getTypeColor()}`}>
         <svg
           className="w-6 h-6"

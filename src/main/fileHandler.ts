@@ -246,13 +246,15 @@ export function registerFileHandlers(
   );
 
   // Copy file paths to clipboard
-  ipcMain.handle("copy-file-paths", () => {
-    const filePaths = stackedFiles.map((file) => file.path).join("\n");
+  ipcMain.handle("copy-file-paths", (_, selectedPaths?: string[]) => {
+    // If selected paths are provided, use them; otherwise use all stacked files
+    const pathsToCopy = selectedPaths || stackedFiles.map((file) => file.path);
+    const filePaths = pathsToCopy.join("\n");
     clipboard.writeText(filePaths);
     sendNotification(
       notchWindow,
       "Copied",
-      `${stackedFiles.length} file paths copied to clipboard.`
+      `${pathsToCopy.length} file paths copied to clipboard.`
     );
     return true;
   });

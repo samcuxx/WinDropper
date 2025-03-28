@@ -103,6 +103,14 @@ function createNotchWindow() {
     show: false,
   });
 
+  // Set initial opacity from settings
+  if (typeof notchSettings.opacity === "number") {
+    notchWindow.setOpacity(notchSettings.opacity);
+    console.log(
+      `Initial notch window opacity set to: ${notchSettings.opacity}`
+    );
+  }
+
   // Log window creation
   console.log(
     `Creating notch window at position: ${notchSettings.x || width - 350}, ${
@@ -270,6 +278,43 @@ function registerIpcHandlers() {
     return settingsManager.getAllSettings();
   });
 
+  // Refresh notch window
+  ipcMain.handle("refresh-notch-window", () => {
+    try {
+      if (notchWindow && !notchWindow.isDestroyed()) {
+        // Apply settings to the existing window
+        const notchSettings = settingsManager.getNotchSettings();
+
+        // Apply always on top setting
+        notchWindow.setAlwaysOnTop(notchSettings.alwaysOnTop);
+
+        // Apply opacity setting
+        if (typeof notchSettings.opacity === "number") {
+          // Set window opacity
+          notchWindow.setOpacity(notchSettings.opacity);
+
+          // Save this in the console for debugging
+          console.log(`Applied opacity setting: ${notchSettings.opacity}`);
+        }
+
+        // Apply position and size if needed
+        if (notchSettings.width && notchSettings.height) {
+          notchWindow.setSize(notchSettings.width, notchSettings.height);
+        }
+
+        // Reload window contents to apply theme changes
+        notchWindow.webContents.reloadIgnoringCache();
+
+        // Return success
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error refreshing notch window:", error);
+      return false;
+    }
+  });
+
   // Toggle always on top
   ipcMain.handle("toggle-always-on-top", () => {
     if (notchWindow) {
@@ -313,9 +358,13 @@ function registerIpcHandlers() {
       }
 
       // Filter out non-existent files
-      const validPaths = filePaths.filter((filePath) =>
-        fs.existsSync(filePath)
-      );
+      const validPaths = filePaths.filter((filePath) => {
+        const exists = fs.existsSync(filePath);
+        if (!exists) {
+          console.warn(`File does not exist: ${filePath}`);
+        }
+        return exists;
+      });
 
       if (validPaths.length === 0) {
         console.error("No valid file paths exist for native drag");
@@ -344,6 +393,8 @@ function registerIpcHandlers() {
           ? { file: validPaths[0], icon: iconPath }
           : { files: validPaths, icon: iconPath };
 
+      console.log("Drag options:", JSON.stringify(dragOptions, null, 2));
+
       // Use the appropriate method to start the drag
       try {
         if (
@@ -351,10 +402,12 @@ function registerIpcHandlers() {
           typeof win.webContents.startDrag === "function"
         ) {
           // For newer Electron versions
+          console.log("Using webContents.startDrag method");
           win.webContents.startDrag(dragOptions as any);
           return true;
         } else {
           // For older versions, use workaround with 'any' type
+          console.log("Attempting to use window.startDrag method");
           const anyWin = win as any;
           if (anyWin.startDrag) {
             anyWin.startDrag(dragOptions);

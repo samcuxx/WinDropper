@@ -18,7 +18,7 @@ declare global {
       moveFilesToDestination: (
         destinationPath: string
       ) => Promise<{ successes: number; failures: number }>;
-      copyFilePaths: () => Promise<boolean>;
+      copyFilePaths: (selectedPaths?: string[]) => Promise<boolean>;
       openContainingFolder: (filePath: string) => Promise<boolean>;
       removeFileFromStack: (filePath: string) => Promise<any[]>;
       selectDestinationFolder: () => Promise<string | null>;
@@ -26,6 +26,7 @@ declare global {
       onNotification: (
         callback: (message: { title: string; body: string }) => void
       ) => () => void;
+      refreshNotchWindow: () => Promise<boolean>;
     };
   }
 }

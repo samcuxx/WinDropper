@@ -26,6 +26,11 @@ contextBridge.exposeInMainWorld("electron", {
       console.error("Error starting native drag:", err);
       return false;
     }),
+  refreshNotchWindow: () =>
+    ipcRenderer.invoke("refresh-notch-window").catch((err) => {
+      console.error("Error refreshing notch window:", err);
+      return false;
+    }),
 
   // File operations
   dropFiles: (filePaths: string[]) =>
@@ -45,8 +50,8 @@ contextBridge.exposeInMainWorld("electron", {
         console.error("Error moving files:", err);
         return { successes: 0, failures: 0 };
       }),
-  copyFilePaths: () =>
-    ipcRenderer.invoke("copy-file-paths").catch((err) => {
+  copyFilePaths: (selectedPaths?: string[]) =>
+    ipcRenderer.invoke("copy-file-paths", selectedPaths).catch((err) => {
       console.error("Error copying file paths:", err);
       return false;
     }),

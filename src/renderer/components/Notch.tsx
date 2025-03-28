@@ -47,7 +47,17 @@ const useDrag = () => {
 };
 
 export const Notch: React.FC = () => {
-  const { files, setFiles, clearFiles } = useFileStore();
+  const {
+    files,
+    setFiles,
+    clearFiles,
+    selectedFiles,
+    toggleFileSelection,
+    selectAllFiles,
+    deselectAllFiles,
+    getSelectedFiles,
+    getSelectedFilePaths,
+  } = useFileStore();
   const { settings, loadSettings } = useSettingsStore();
 
   const [isDragging, setIsDragging] = useState(false);
@@ -190,10 +200,18 @@ export const Notch: React.FC = () => {
       if (!files || files.length === 0) return;
 
       console.log("Copying file paths...");
-      const success = await window.electron.copyFilePaths();
+
+      // Get selected file paths or use all files if none selected
+      const selectedFiles = getSelectedFiles();
+      const pathsToCopy =
+        selectedFiles.length > 0 ? getSelectedFilePaths() : null; // null will copy all files
+
+      const success = await window.electron.copyFilePaths(pathsToCopy);
 
       if (success) {
-        console.log("File paths copied successfully");
+        const count =
+          selectedFiles.length > 0 ? selectedFiles.length : files.length;
+        console.log(`${count} file paths copied successfully`);
       } else {
         console.error("Failed to copy file paths");
       }
@@ -234,8 +252,109 @@ export const Notch: React.FC = () => {
     }
   };
 
+  // Handle multi-file native drag
+  const handleMultiFileDrag = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const selectedFilesArray = getSelectedFiles();
+    if (selectedFilesArray.length === 0) return;
+
+    try {
+      // Add a custom effect to indicate drag
+      e.dataTransfer.effectAllowed = "copyMove";
+
+      // Set drag image to first file in selection
+      if (e.target && selectedFilesArray.length > 0) {
+        const element = e.target as HTMLElement;
+        e.dataTransfer.setDragImage(element, 20, 20);
+      }
+
+      // Set the paths for all selected files
+      const selectedPaths = getSelectedFilePaths();
+      e.dataTransfer.setData("text/plain", selectedPaths.join("\n"));
+
+      // Set dragging state for visual feedback
+      setIsDragging(true);
+
+      // Log which files are being dragged
+      console.log(
+        `Starting drag for ${selectedPaths.length} files:`,
+        selectedPaths
+      );
+
+      // Copy to clipboard as fallback
+      navigator.clipboard
+        .writeText(selectedPaths.join("\n"))
+        .then(() => {
+          console.log("Selected file paths copied to clipboard");
+        })
+        .catch((err) => {
+          console.error("Failed to copy selected file paths during drag:", err);
+        });
+
+      // Use native drag for all selected files
+      if (window.electron && window.electron.startNativeDrag) {
+        try {
+          // Use immediate execution instead of setTimeout to ensure it happens immediately
+          window.electron
+            .startNativeDrag(selectedPaths)
+            .then((success) => {
+              if (success) {
+                console.log(
+                  "Native multi-file drag successful:",
+                  selectedPaths.length,
+                  "files"
+                );
+              } else {
+                console.log(
+                  "Native multi-file drag returned false, using clipboard fallback"
+                );
+              }
+            })
+            .catch((err) => {
+              console.error("Native multi-file drag error:", err);
+              console.log("Using clipboard fallback");
+            });
+        } catch (nativeDragError) {
+          console.error(
+            "Exception in native multi-file drag:",
+            nativeDragError
+          );
+          console.log("Using clipboard fallback");
+        }
+      }
+    } catch (error) {
+      console.error("Error in multi-file drag start:", error);
+      setIsDragging(false);
+    }
+  };
+
+  // Add drag end handler for multi-drag
+  const handleMultiDragEnd = () => {
+    console.log("Multi-file drag ended");
+    setIsDragging(false);
+  };
+
+  // Handle select all files
+  const handleSelectAllFiles = () => {
+    if (files.length === 0) return;
+
+    if (getSelectedFiles().length === files.length) {
+      // If all files are already selected, deselect all
+      deselectAllFiles();
+    } else {
+      // Otherwise select all
+      selectAllFiles();
+    }
+
+    setShowContextMenu(false);
+  };
+
   // Context menu options
   const getContextMenuOptions = () => {
+    const selectedCount = getSelectedFiles().length;
+
     const options = [
       // Options for selected file
       ...(selectedFile
@@ -278,7 +397,15 @@ export const Notch: React.FC = () => {
 
       // General options
       {
-        label: "Copy All Paths",
+        label: "Select All Files",
+        onClick: handleSelectAllFiles,
+        disabled: files.length === 0,
+      },
+      {
+        label:
+          selectedCount > 0
+            ? `Copy Selected Paths (${selectedCount})`
+            : "Copy All Paths",
         onClick: handleCopyFilePaths,
         disabled: files.length === 0,
       },
@@ -366,15 +493,60 @@ export const Notch: React.FC = () => {
       );
     }
 
+    const selectedCount = getSelectedFiles().length;
+    const isMultiDraggable = selectedCount > 0;
+
     return (
       <div className="space-y-1">
-        {files.map((file) => (
-          <FileItem
-            key={file.id}
-            file={file}
-            onContextMenu={(e) => handleContextMenu(e, file)}
-          />
-        ))}
+        {/* Select all checkbox when files exist */}
+        {files.length > 0 && (
+          <div className="flex items-center p-1 mb-2 border-b border-gray-200 dark:border-gray-700">
+            <input
+              type="checkbox"
+              checked={
+                getSelectedFiles().length === files.length && files.length > 0
+              }
+              onChange={handleSelectAllFiles}
+              className="h-4 w-4 text-windropper-500 rounded focus:ring-windropper-500 border-gray-300 cursor-pointer mr-2"
+              aria-label="Select all files"
+            />
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              {getSelectedFiles().length === 0
+                ? "Select all"
+                : `Selected ${getSelectedFiles().length} of ${files.length}`}
+            </span>
+          </div>
+        )}
+
+        {/* Files list with multi-drag container */}
+        <div
+          className={`space-y-1 ${
+            isMultiDraggable
+              ? "bg-windropper-50 dark:bg-windropper-900/10 p-2 rounded-md border border-dashed border-windropper-200 dark:border-windropper-700"
+              : ""
+          }`}
+          draggable={isMultiDraggable}
+          onDragStart={handleMultiFileDrag}
+          onDragEnd={handleMultiDragEnd}
+        >
+          {isMultiDraggable && (
+            <div className="text-xs text-center text-windropper-500 mb-2 font-medium">
+              {selectedCount === 1
+                ? "Drag 1 file"
+                : `Drag ${selectedCount} files`}
+            </div>
+          )}
+
+          {files.map((file) => (
+            <FileItem
+              key={file.id}
+              file={file}
+              isSelected={selectedFiles.has(file.id)}
+              onSelect={toggleFileSelection}
+              onContextMenu={(e) => handleContextMenu(e, file)}
+            />
+          ))}
+        </div>
       </div>
     );
   };
@@ -437,6 +609,13 @@ export const Notch: React.FC = () => {
           </div>
 
           <div className="flex space-x-1">
+            {/* Add selected counter badge when files are selected */}
+            {getSelectedFiles().length > 0 && (
+              <div className="bg-windropper-500 text-white text-xs rounded-full px-2 py-0.5 flex items-center justify-center">
+                {getSelectedFiles().length}
+              </div>
+            )}
+
             <button
               onClick={handleCopyFilePaths}
               disabled={!files || files.length === 0}
