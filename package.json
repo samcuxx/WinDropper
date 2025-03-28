@@ -1,0 +1,71 @@
+{
+    "name": "windropper",
+    "version": "0.1.0",
+    "description": "A Windows alternative to macOS Dropover for temporary file stacking and management",
+    "main": "dist/main/main.js",
+    "scripts": {
+        "dev": "concurrently \"npm run dev:main\" \"npm run dev:renderer\"",
+        "dev:main": "tsc -p tsconfig.main.json -w",
+        "dev:renderer": "vite",
+        "build": "node build.js",
+        "build:main": "tsc -p tsconfig.main.json",
+        "build:renderer": "vite build",
+        "package": "electron-builder build --win",
+        "start": "cross-env NODE_ENV=production electron ."
+    },
+    "keywords": [
+        "electron",
+        "react",
+        "typescript",
+        "tailwindcss",
+        "file-management",
+        "drag-and-drop"
+    ],
+    "author": "",
+    "license": "MIT",
+    "devDependencies": {
+        "@types/node": "^20.8.0",
+        "@types/react": "^18.2.24",
+        "@types/react-dom": "^18.2.8",
+        "@vitejs/plugin-react": "^4.1.0",
+        "autoprefixer": "^10.4.16",
+        "concurrently": "^8.2.1",
+        "cross-env": "^7.0.3",
+        "electron": "^26.2.2",
+        "electron-builder": "^24.6.4",
+        "postcss": "^8.4.31",
+        "tailwindcss": "^3.3.3",
+        "typescript": "^5.2.2",
+        "vite": "^4.4.9"
+    },
+    "dependencies": {
+        "electron-store": "^8.1.0",
+        "framer-motion": "^10.16.4",
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0",
+        "zustand": "^4.4.1"
+    },
+    "build": {
+        "appId": "com.windropper.app",
+        "productName": "WinDropper",
+        "files": [
+            "dist/**/*",
+            "package.json"
+        ],
+        "directories": {
+            "output": "release"
+        },
+        "win": {
+            "target": [
+                "nsis"
+            ],
+            "icon": "public/icons/icon.ico"
+        },
+        "nsis": {
+            "oneClick": false,
+            "allowToChangeInstallationDirectory": true,
+            "createDesktopShortcut": true,
+            "createStartMenuShortcut": true
+        }
+    }
+}

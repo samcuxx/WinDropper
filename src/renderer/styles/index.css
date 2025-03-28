@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.5);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.8);
+}
+
+/* Custom styles */
+body {
+  @apply bg-transparent font-sans antialiased;
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.windropper-notch {
+  @apply bg-white/90 dark:bg-gray-800/90 rounded-lg shadow-notch dark:shadow-notch-dark;
+  border: 1px solid rgba(229, 231, 235, 0.5);
+}
+
+.dark .windropper-notch {
+  border: 1px solid rgba(55, 65, 81, 0.5);
+}
+
+/* Drag handle styles */
+.windropper-handle {
+  @apply bg-windropper-500 rounded-full h-6 w-6 flex items-center justify-center cursor-move;
+  -webkit-app-region: drag; /* This enables window dragging */
+}
+
+/* Draggable areas */
+.draggable-area {
+  -webkit-app-region: drag;
+}
+
+/* Make sure buttons and interactive elements are not drag regions */
+.windropper-button,
+.file-item,
+button,
+input,
+select,
+[role="button"] {
+  -webkit-app-region: no-drag;
+}
+
+.windropper-button {
+  @apply transition-colors duration-200 ease-in-out;
+}
+
+.windropper-button:hover {
+  @apply bg-gray-100 dark:bg-gray-700 rounded;
+}
+
+.windropper-empty-notch {
+  @apply border-2 border-dashed border-gray-300 dark:border-gray-600;
+}
+
+.file-item {
+  @apply transition-all duration-200 ease-in-out;
+}
+
+.file-item:hover {
+  @apply bg-gray-100 dark:bg-gray-700;
+}
+
+/* Drag and drop styles */
+.drag-over {
+  @apply border-windropper-500 bg-windropper-50 dark:bg-windropper-900/20;
+}
+
+/* Draggable file styles */
+.file-item.draggable {
+  cursor: grab;
+}
+
+.file-item.dragging {
+  cursor: grabbing;
+  opacity: 0.7;
+}
