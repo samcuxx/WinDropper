@@ -18,6 +18,11 @@ contextBridge.exposeInMainWorld("electron", {
       console.error("Error toggling always on top:", err);
       return false;
     }),
+  toggleStartOnBoot: () =>
+    ipcRenderer.invoke("toggle-start-on-boot").catch((err) => {
+      console.error("Error toggling start on boot:", err);
+      return false;
+    }),
 
   // Window operations
   startDrag: () => ipcRenderer.send("window-drag-start"),
@@ -29,6 +34,26 @@ contextBridge.exposeInMainWorld("electron", {
   refreshNotchWindow: () =>
     ipcRenderer.invoke("refresh-notch-window").catch((err) => {
       console.error("Error refreshing notch window:", err);
+      return false;
+    }),
+  minimizeWindow: () =>
+    ipcRenderer.invoke("minimize-window").catch((err) => {
+      console.error("Error minimizing window:", err);
+      return false;
+    }),
+  maximizeWindow: () =>
+    ipcRenderer.invoke("maximize-window").catch((err) => {
+      console.error("Error maximizing/restoring window:", err);
+      return false;
+    }),
+  closeWindow: () =>
+    ipcRenderer.invoke("close-window").catch((err) => {
+      console.error("Error closing window:", err);
+      return false;
+    }),
+  isWindowMaximized: () =>
+    ipcRenderer.invoke("is-window-maximized").catch((err) => {
+      console.error("Error checking if window is maximized:", err);
       return false;
     }),
 

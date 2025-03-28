@@ -23,14 +23,14 @@
 
 /* Custom styles */
 body {
-  @apply bg-transparent font-sans antialiased;
+  @apply font-sans antialiased bg-transparent;
   overflow: hidden;
   -webkit-user-select: none;
   user-select: none;
 }
 
 .windropper-notch {
-  @apply bg-white/90 dark:bg-gray-800/90 rounded-lg shadow-notch dark:shadow-notch-dark;
+  @apply rounded-lg bg-white/90 dark:bg-gray-800/90 shadow-notch dark:shadow-notch-dark;
   border: 1px solid rgba(229, 231, 235, 0.5);
 }
 
@@ -40,7 +40,7 @@ body {
 
 /* Drag handle styles */
 .windropper-handle {
-  @apply bg-windropper-500 rounded-full h-6 w-6 flex items-center justify-center cursor-move;
+  @apply flex justify-center items-center w-6 h-6 rounded-full cursor-move bg-windropper-500;
   -webkit-app-region: drag; /* This enables window dragging */
 }
 
@@ -64,11 +64,11 @@ select,
 }
 
 .windropper-button:hover {
-  @apply bg-gray-100 dark:bg-gray-700 rounded;
+  @apply bg-gray-100 rounded dark:bg-gray-700;
 }
 
 .windropper-empty-notch {
-  @apply border-2 border-dashed border-gray-300 dark:border-gray-600;
+  @apply border-2 border-gray-300 border-dashed dark:border-gray-600;
 }
 
 .file-item {

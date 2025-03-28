@@ -11,6 +11,7 @@ declare global {
       getSettings: () => Promise<any>;
       updateSettings: (settings: any) => Promise<any>;
       toggleAlwaysOnTop: () => Promise<boolean>;
+      toggleStartOnBoot: () => Promise<boolean>;
       startDrag: () => void;
       startNativeDrag: (filePaths: string[]) => Promise<boolean>;
       dropFiles: (filePaths: string[]) => Promise<any[]>;
@@ -27,6 +28,10 @@ declare global {
         callback: (message: { title: string; body: string }) => void
       ) => () => void;
       refreshNotchWindow: () => Promise<boolean>;
+      minimizeWindow: () => Promise<boolean>;
+      maximizeWindow: () => Promise<boolean>;
+      closeWindow: () => Promise<boolean>;
+      isWindowMaximized: () => Promise<boolean>;
     };
   }
 }

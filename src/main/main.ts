@@ -6,6 +6,7 @@ import {
   globalShortcut,
   ipcMain,
   screen,
+  clipboard,
 } from "electron";
 import * as path from "path";
 import { createSettingsManager } from "./settingsManager";
@@ -37,6 +38,8 @@ function createMainWindow() {
     transparent: false,
     backgroundColor: "#ffffff", // White background for light mode
     icon: path.join(__dirname, "../../public/icons/icon.ico"),
+    frame: false, // Remove default frame/title bar
+    titleBarStyle: "hidden",
   });
 
   // Load the index.html of the app
@@ -142,8 +145,8 @@ function createNotchWindow() {
       }
     );
 
-    // Open DevTools for debugging
-    notchWindow.webContents.openDevTools();
+    // Comment out DevTools for production
+    // notchWindow.webContents.openDevTools();
   }
 
   notchWindow.on("closed", () => {
@@ -258,11 +261,16 @@ function registerGlobalShortcuts() {
   });
 }
 
-// Define an interface for the drag options to match Electron's expected format
+// Define drag options interface with all possible properties
 interface DragOptions {
   file?: string;
   files?: string[];
   icon?: string;
+}
+
+// Add type for the startDrag interface
+interface WebContentsDrag {
+  startDrag: (item: DragOptions) => void;
 }
 
 // IPC handlers for settings
@@ -276,6 +284,47 @@ function registerIpcHandlers() {
   ipcMain.handle("update-settings", (_, settings) => {
     settingsManager.updateSettings(settings);
     return settingsManager.getAllSettings();
+  });
+
+  // Window control handlers
+  ipcMain.handle("minimize-window", (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win) {
+      win.minimize();
+      return true;
+    }
+    return false;
+  });
+
+  ipcMain.handle("maximize-window", (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win) {
+      if (win.isMaximized()) {
+        win.restore();
+        return false; // Return isMaximized state after action
+      } else {
+        win.maximize();
+        return true; // Return isMaximized state after action
+      }
+    }
+    return false;
+  });
+
+  ipcMain.handle("close-window", (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win) {
+      win.close();
+      return true;
+    }
+    return false;
+  });
+
+  ipcMain.handle("is-window-maximized", (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win) {
+      return win.isMaximized();
+    }
+    return false;
   });
 
   // Refresh notch window
@@ -326,6 +375,22 @@ function registerIpcHandlers() {
     return false;
   });
 
+  // Toggle start on boot
+  ipcMain.handle("toggle-start-on-boot", () => {
+    try {
+      const currentValue = settingsManager.getStartOnBoot();
+      const newValue = !currentValue;
+
+      settingsManager.setStartOnBoot(newValue);
+      updateStartupSettings(); // Apply the change immediately
+
+      return newValue;
+    } catch (error) {
+      console.error("Error toggling start on boot:", error);
+      return false;
+    }
+  });
+
   // Handle window dragging
   ipcMain.on("window-drag-start", (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);
@@ -359,11 +424,16 @@ function registerIpcHandlers() {
 
       // Filter out non-existent files
       const validPaths = filePaths.filter((filePath) => {
-        const exists = fs.existsSync(filePath);
-        if (!exists) {
-          console.warn(`File does not exist: ${filePath}`);
+        try {
+          const exists = fs.existsSync(filePath);
+          if (!exists) {
+            console.warn(`File does not exist: ${filePath}`);
+          }
+          return exists;
+        } catch (error) {
+          console.error(`Error checking if file exists: ${filePath}`, error);
+          return false;
         }
-        return exists;
       });
 
       if (validPaths.length === 0) {
@@ -376,49 +446,83 @@ function registerIpcHandlers() {
         validPaths
       );
 
-      // Get the icon path
-      const iconPath = path.join(__dirname, "../../public/icons/icon.ico");
-      console.log("Using icon:", iconPath);
-
-      // Check if the icon exists
-      if (fs.existsSync(iconPath)) {
-        console.log("Found icon at:", iconPath);
+      // Get the appropriate icon path for production or development
+      let iconPath;
+      if (process.env.NODE_ENV === "development") {
+        iconPath = path.join(__dirname, "../../public/icons/icon.ico");
       } else {
-        console.warn("Icon not found at:", iconPath);
+        // In production, icon is in the resources folder or in a different location
+        const possiblePaths = [
+          path.join(__dirname, "../renderer/icons/icon.ico"),
+          path.join(__dirname, "../../renderer/icons/icon.ico"),
+          path.join(app.getAppPath(), "icons/icon.ico"),
+          path.join(
+            process.resourcesPath,
+            "app.asar.unpacked/public/icons/icon.ico"
+          ),
+          path.join(process.resourcesPath, "icons/icon.ico"),
+        ];
+
+        iconPath = possiblePaths.find((p) => {
+          try {
+            return fs.existsSync(p);
+          } catch {
+            return false;
+          }
+        });
+
+        if (!iconPath) {
+          console.warn("Icon not found, using first file as icon");
+          iconPath = validPaths[0]; // Use the first file as the icon if no icon is found
+        }
       }
 
+      console.log("Using icon:", iconPath);
+
       // Create options object that works with Electron's API
-      const dragOptions: DragOptions =
-        validPaths.length === 1
-          ? { file: validPaths[0], icon: iconPath }
-          : { files: validPaths, icon: iconPath };
+      let dragOptions: DragOptions;
+      if (validPaths.length === 1) {
+        dragOptions = { file: validPaths[0] };
+        if (iconPath) dragOptions.icon = iconPath;
+      } else {
+        dragOptions = { files: validPaths };
+        if (iconPath) dragOptions.icon = iconPath;
+      }
 
       console.log("Drag options:", JSON.stringify(dragOptions, null, 2));
 
       // Use the appropriate method to start the drag
       try {
+        // For newer Electron versions (recommended approach)
         if (
           win.webContents &&
           typeof win.webContents.startDrag === "function"
         ) {
-          // For newer Electron versions
           console.log("Using webContents.startDrag method");
           win.webContents.startDrag(dragOptions as any);
           return true;
+        }
+        // For older Electron versions (fallback)
+        else if (typeof (win as any).startDrag === "function") {
+          console.log("Using window.startDrag method");
+          (win as any).startDrag(dragOptions);
+          return true;
         } else {
-          // For older versions, use workaround with 'any' type
-          console.log("Attempting to use window.startDrag method");
-          const anyWin = win as any;
-          if (anyWin.startDrag) {
-            anyWin.startDrag(dragOptions);
-            return true;
-          } else {
-            console.warn("No drag method available");
-            return false;
-          }
+          console.warn(
+            "No drag method available - copying to clipboard instead"
+          );
+          clipboard.writeText(validPaths.join("\n"));
+          return false;
         }
       } catch (dragError) {
         console.error("Error in drag operation:", dragError);
+        // Fallback to clipboard
+        try {
+          clipboard.writeText(validPaths.join("\n"));
+          console.log("Copied file paths to clipboard as fallback");
+        } catch (clipboardError) {
+          console.error("Could not copy to clipboard:", clipboardError);
+        }
         return false;
       }
     } catch (error) {
@@ -428,6 +532,31 @@ function registerIpcHandlers() {
   });
 }
 
+// Update startup settings based on user preference
+function updateStartupSettings() {
+  try {
+    // Check if the app should start at login
+    const startOnBoot = settingsManager.getStartOnBoot();
+
+    // Get the correct path for the executable
+    const appPath = process.execPath;
+
+    // Set login item settings
+    app.setLoginItemSettings({
+      openAtLogin: startOnBoot,
+      // Only enable open in background in production to avoid
+      // opening multiple instances during development
+      openAsHidden: !isDev() && startOnBoot,
+      path: appPath,
+      args: [],
+    });
+
+    console.log(`Start on boot setting updated: ${startOnBoot}`);
+  } catch (error) {
+    console.error("Error updating startup settings:", error);
+  }
+}
+
 // This method will be called when Electron has finished initialization
 app.whenReady().then(() => {
   createNotchWindow();
@@ -435,6 +564,7 @@ app.whenReady().then(() => {
   registerGlobalShortcuts();
   registerIpcHandlers();
   registerFileHandlers(notchWindow, mainWindow);
+  updateStartupSettings(); // Apply startup settings
 });
 
 // Quit when all windows are closed, except on macOS

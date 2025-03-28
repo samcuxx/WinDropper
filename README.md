@@ -15,32 +15,30 @@ WinDropper is a Windows alternative to macOS Dropover, providing a convenient wa
 ## Features
 
 - **Drag and Drop File Stacking:** Easily drag files from File Explorer to the floating notch
+- **Multi-File Management:** Select and drag multiple files at once using checkboxes
 - **Smart File Organization:** Categorize files by type when moving them to destinations
 - **Floating Notch UI:** Minimalistic, resizable, and always-on-top window for quick access
 - **Context Menu Actions:** Quick actions for files including copying paths, opening containing folders
-- **Multi-File Management:** Select and drag multiple files at once using checkboxes
 - **Keyboard Shortcuts:** Use CTRL+SHIFT+D to show/hide the WinDropper notch
 - **Customization:** Change appearance, behavior, and file management settings
 - **Dark/Light Mode Support:** Adapts to your system theme or manually selectable
+- **Start on Boot:** Option to automatically launch when you log in to Windows
 
 ## Installation
 
-### Requirements
+### Latest Release
 
-- Windows 10 or higher
-- 100MB free disk space
+You can download the latest release from the [Releases](https://github.com/username/windropper/releases) page. For the current beta, we provide two options:
 
-### Installation Methods
+#### Method 1: Installer (Recommended)
 
-#### Method 1: Installer
-
-1. Download the latest installer from the [Releases](https://github.com/username/windropper/releases) page
+1. Download the "WinDropper Setup 0.1.0-beta.1.exe" installer from the releases page
 2. Run the installer and follow the prompts
 3. Launch WinDropper from your Start menu
 
 #### Method 2: Portable Version
 
-1. Download the portable ZIP from the [Releases](https://github.com/username/windropper/releases) page
+1. Download "WinDropper-0.1.0-beta.1-portable.zip" from the releases page
 2. Extract the ZIP to a location of your choice
 3. Run `WinDropper.exe` to start the application
 
@@ -49,27 +47,19 @@ WinDropper is a Windows alternative to macOS Dropover, providing a convenient wa
 ### Basic Usage
 
 1. **Start WinDropper:** Run the application from the Start menu or taskbar
-2. **Drag Files:** Drag any files to the floating notch
-3. **Manage Files:** Right-click on files or the notch for options
-4. **Move Files:** Drag files back out to a new location or use the context menu to move them to predefined locations
-5. **Select Multiple Files:** Use the checkboxes to select files, then drag them as a group
+2. **Show/Hide the Notch:** Press `CTRL+SHIFT+D` to toggle the floating notch
+3. **Drag Files:** Drag any files from File Explorer to the floating notch
+4. **Select Multiple Files:** Use the checkboxes to select files, then drag them as a group
+5. **Use Context Menu:** Right-click on files or the notch for more options
+6. **Move Files:** Drag files back out to a new location or use the context menu to move them to predefined locations
 
-### Keyboard Shortcuts
+### Tips & Tricks
 
-- **CTRL+SHIFT+D:** Show/hide the WinDropper notch
-- **CTRL+C:** (When notch is focused) Copy all file paths in the stack
-
-### Customization
-
-WinDropper offers several customization options:
-
-1. **Click the Settings icon** in the system tray or right-click the tray icon and select "Settings"
-2. Adjust appearance, behavior, and file management settings:
-   - Change theme (Light/Dark/System)
-   - Toggle always-on-top behavior
-   - Set default destination folder
-   - Enable/disable auto-categorization by file type
-   - Configure auto-clear timeout
+- **Quick Copy Paths:** Select files and click the copy button or use the context menu
+- **Custom Destinations:** Set your preferred default destination in Settings
+- **Organize Automatically:** Enable "Organize files by type" to sort files into folders
+- **Move to Recent Locations:** Right-click and use the "Move to" menu to access recent destinations
+- **Start on Boot:** Enable in Settings to have WinDropper ready when you need it
 
 ## Development
 
@@ -115,8 +105,10 @@ The enhanced development environment provides:
 To build the application for distribution:
 
 ```bash
-# Build for current platform
+# Build the application
 npm run build
+
+# Package for distribution
 npm run package
 ```
 
@@ -139,7 +131,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Acknowledgments
 
 - Inspired by macOS Dropover
-- Icon design by [Your Name]
 - Built with Electron, React, TypeScript, and TailwindCSS
-
-it shows well now, the setting page setting dont work on the win dropper, i drop files to the win dropper but i cant drag the file from it to other folder. copy button dont work , i cant move the windroper around, its stock to the exact location

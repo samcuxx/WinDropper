@@ -130,9 +130,48 @@ export function registerFileHandlers(
   // Handle file drop
   ipcMain.handle("drop-files", async (_, filePaths: string[]) => {
     try {
-      const newFiles = filePaths.map((filePath) => getFileInfo(filePath));
-      stackedFiles = [...stackedFiles, ...newFiles];
-      notifyFileUpdates(notchWindow);
+      // Get existing file paths for duplicate checking
+      const existingPaths = new Set(stackedFiles.map((file) => file.path));
+
+      // Filter out duplicate files
+      const newPaths = filePaths.filter((path) => !existingPaths.has(path));
+      const duplicateCount = filePaths.length - newPaths.length;
+
+      // Process only new, non-duplicate files
+      const newFiles = newPaths.map((filePath) => getFileInfo(filePath));
+
+      // Add new files to the stack
+      if (newFiles.length > 0) {
+        stackedFiles = [...stackedFiles, ...newFiles];
+        notifyFileUpdates(notchWindow);
+      }
+
+      // Show appropriate notification based on results
+      if (duplicateCount > 0) {
+        if (newFiles.length > 0) {
+          // Some duplicates, some new files
+          sendNotification(
+            notchWindow,
+            "Files Added",
+            `Added ${newFiles.length} files. Skipped ${duplicateCount} duplicate file(s).`
+          );
+        } else {
+          // All duplicates
+          sendNotification(
+            notchWindow,
+            "Duplicate Files",
+            `All ${duplicateCount} file(s) already exist in the dropper.`
+          );
+        }
+      } else if (newFiles.length > 0) {
+        // All new files
+        sendNotification(
+          notchWindow,
+          "Files Added",
+          `Added ${newFiles.length} files to the dropper.`
+        );
+      }
+
       return stackedFiles;
     } catch (error) {
       console.error("Error processing dropped files:", error);

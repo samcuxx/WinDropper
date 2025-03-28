@@ -194,26 +194,22 @@ export const Notch: React.FC = () => {
     }
   };
 
-  // Copy all file paths
+  // Handle copying file paths to clipboard
   const handleCopyFilePaths = async () => {
     try {
-      if (!files || files.length === 0) return;
-
-      console.log("Copying file paths...");
-
-      // Get selected file paths or use all files if none selected
-      const selectedFiles = getSelectedFiles();
+      // If there are selected files, copy only their paths; otherwise copy all
+      const selectedFilesArray = getSelectedFiles();
       const pathsToCopy =
-        selectedFiles.length > 0 ? getSelectedFilePaths() : null; // null will copy all files
+        selectedFilesArray.length > 0 ? getSelectedFilePaths() : undefined;
 
       const success = await window.electron.copyFilePaths(pathsToCopy);
 
       if (success) {
         const count =
-          selectedFiles.length > 0 ? selectedFiles.length : files.length;
-        console.log(`${count} file paths copied successfully`);
-      } else {
-        console.error("Failed to copy file paths");
+          pathsToCopy && pathsToCopy.length > 0
+            ? pathsToCopy.length
+            : files.length;
+        console.log(`Copied ${count} file paths to clipboard`);
       }
     } catch (error) {
       console.error("Error copying file paths:", error);
@@ -264,65 +260,51 @@ export const Notch: React.FC = () => {
       // Add a custom effect to indicate drag
       e.dataTransfer.effectAllowed = "copyMove";
 
-      // Set drag image to first file in selection
+      // Set drag image to the current element or first file
       if (e.target && selectedFilesArray.length > 0) {
         const element = e.target as HTMLElement;
         e.dataTransfer.setDragImage(element, 20, 20);
       }
 
-      // Set the paths for all selected files
+      // Get the selected file paths
       const selectedPaths = getSelectedFilePaths();
+
+      // Set the paths in multiple formats for compatibility
       e.dataTransfer.setData("text/plain", selectedPaths.join("\n"));
+      e.dataTransfer.setData(
+        "text/uri-list",
+        selectedPaths.map((p) => "file://" + p.replace(/\\/g, "/")).join("\n")
+      );
 
       // Set dragging state for visual feedback
       setIsDragging(true);
 
       // Log which files are being dragged
-      console.log(
-        `Starting drag for ${selectedPaths.length} files:`,
-        selectedPaths
-      );
+      console.log("Starting multi-file drag for files:", selectedPaths);
 
-      // Copy to clipboard as fallback
-      navigator.clipboard
-        .writeText(selectedPaths.join("\n"))
-        .then(() => {
-          console.log("Selected file paths copied to clipboard");
-        })
-        .catch((err) => {
-          console.error("Failed to copy selected file paths during drag:", err);
-        });
+      // Always copy to clipboard as a reliable fallback
+      await navigator.clipboard.writeText(selectedPaths.join("\n"));
+      console.log("Selected file paths copied to clipboard");
 
-      // Use native drag for all selected files
+      // Use native drag API for system-level drag and drop
       if (window.electron && window.electron.startNativeDrag) {
         try {
-          // Use immediate execution instead of setTimeout to ensure it happens immediately
-          window.electron
-            .startNativeDrag(selectedPaths)
-            .then((success) => {
-              if (success) {
-                console.log(
-                  "Native multi-file drag successful:",
-                  selectedPaths.length,
-                  "files"
-                );
-              } else {
-                console.log(
-                  "Native multi-file drag returned false, using clipboard fallback"
-                );
-              }
-            })
-            .catch((err) => {
-              console.error("Native multi-file drag error:", err);
-              console.log("Using clipboard fallback");
-            });
-        } catch (nativeDragError) {
-          console.error(
-            "Exception in native multi-file drag:",
-            nativeDragError
-          );
-          console.log("Using clipboard fallback");
+          const success = await window.electron.startNativeDrag(selectedPaths);
+          if (success) {
+            console.log(
+              `Native multi-file drag successful for ${selectedPaths.length} files`
+            );
+          } else {
+            console.log(
+              "Native multi-file drag returned false - using clipboard fallback"
+            );
+          }
+        } catch (err) {
+          console.error("Error in native multi-file drag:", err);
+          console.log("Clipboard fallback will be used instead");
         }
+      } else {
+        console.warn("Native drag API not available");
       }
     } catch (error) {
       console.error("Error in multi-file drag start:", error);
@@ -473,9 +455,9 @@ export const Notch: React.FC = () => {
   const renderFiles = () => {
     if (!files || !Array.isArray(files) || files.length === 0) {
       return (
-        <div className="h-full flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+        <div className="flex flex-col justify-center items-center h-full text-gray-500 dark:text-gray-400">
           <svg
-            className="w-12 h-12 mb-3"
+            className="mb-3 w-12 h-12"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -507,7 +489,7 @@ export const Notch: React.FC = () => {
                 getSelectedFiles().length === files.length && files.length > 0
               }
               onChange={handleSelectAllFiles}
-              className="h-4 w-4 text-windropper-500 rounded focus:ring-windropper-500 border-gray-300 cursor-pointer mr-2"
+              className="mr-2 w-4 h-4 rounded border-gray-300 cursor-pointer text-windropper-500 focus:ring-windropper-500"
               aria-label="Select all files"
             />
             <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -522,7 +504,7 @@ export const Notch: React.FC = () => {
         <div
           className={`space-y-1 ${
             isMultiDraggable
-              ? "bg-windropper-50 dark:bg-windropper-900/10 p-2 rounded-md border border-dashed border-windropper-200 dark:border-windropper-700"
+              ? "p-2 rounded-md border border-dashed bg-windropper-50 dark:bg-windropper-900/10 border-windropper-200 dark:border-windropper-700"
               : ""
           }`}
           draggable={isMultiDraggable}
@@ -530,7 +512,7 @@ export const Notch: React.FC = () => {
           onDragEnd={handleMultiDragEnd}
         >
           {isMultiDraggable && (
-            <div className="text-xs text-center text-windropper-500 mb-2 font-medium">
+            <div className="mb-2 text-xs font-medium text-center text-windropper-500">
               {selectedCount === 1
                 ? "Drag 1 file"
                 : `Drag ${selectedCount} files`}
@@ -553,7 +535,7 @@ export const Notch: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="h-full w-full flex items-center justify-center">
+      <div className="flex justify-center items-center w-full h-full">
         <div className="text-gray-500 dark:text-gray-400">Loading...</div>
       </div>
     );
@@ -561,14 +543,14 @@ export const Notch: React.FC = () => {
 
   if (error) {
     return (
-      <div className="h-full w-full flex items-center justify-center">
+      <div className="flex justify-center items-center w-full h-full">
         <div className="text-red-500">{error}</div>
       </div>
     );
   }
 
   return (
-    <div className="h-full w-full flex items-center justify-center">
+    <div className="flex justify-center items-center w-full h-full">
       <motion.div
         ref={notchRef}
         className={`windropper-notch flex flex-col h-full w-full p-1 overflow-hidden ${
@@ -586,9 +568,9 @@ export const Notch: React.FC = () => {
         transition={{ duration: 0.3 }}
       >
         {/* Handle/title bar */}
-        <div className="flex items-center justify-between p-2 draggable-area">
+        <div className="flex justify-between items-center p-2 draggable-area">
           <div
-            className="windropper-handle select-none"
+            className="select-none windropper-handle"
             onMouseDown={handleDragStart}
             onMouseUp={handleDragEnd}
           >
@@ -703,7 +685,7 @@ export const Notch: React.FC = () => {
         </div>
 
         {/* File list */}
-        <div className="flex-1 overflow-auto p-2">{renderFiles()}</div>
+        <div className="overflow-auto flex-1 p-2">{renderFiles()}</div>
       </motion.div>
 
       {/* Context menu */}

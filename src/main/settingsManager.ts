@@ -25,6 +25,7 @@ interface Settings {
   notch: NotchSettings;
   files: FileSettings;
   firstRun: boolean;
+  startOnBoot: boolean;
 }
 
 // Default settings
@@ -46,6 +47,7 @@ const defaultSettings: Settings = {
     recentDestinations: [],
   },
   firstRun: true,
+  startOnBoot: true, // Default to start on boot
 };
 
 export function createSettingsManager() {
@@ -142,6 +144,16 @@ export function createSettingsManager() {
     // Clear recent destinations
     clearRecentDestinations(): void {
       store.set("files.recentDestinations", []);
+    },
+
+    // Get start on boot setting
+    getStartOnBoot(): boolean {
+      return store.get("startOnBoot", true);
+    },
+
+    // Set start on boot setting
+    setStartOnBoot(enabled: boolean): void {
+      store.set("startOnBoot", enabled);
     },
 
     // Reset settings to default

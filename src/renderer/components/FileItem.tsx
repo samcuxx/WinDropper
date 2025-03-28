@@ -85,7 +85,8 @@ export const FileItem: React.FC<FileItemProps> = ({
     // For dragging outside of window, set the files on the event
     if (e.dataTransfer) {
       try {
-        e.preventDefault(); // Prevent default to handle manually
+        // We need to prevent default to use our custom implementation
+        e.preventDefault();
         e.stopPropagation();
 
         // Add a custom effect to indicate drag
@@ -96,16 +97,18 @@ export const FileItem: React.FC<FileItemProps> = ({
           e.dataTransfer.setDragImage(fileRef.current, 20, 20);
         }
 
-        // Set the drag data for internal operations
+        // Set the drag data in multiple formats for maximum compatibility
         e.dataTransfer.setData("text/plain", file.path);
+        e.dataTransfer.setData(
+          "text/uri-list",
+          "file://" + file.path.replace(/\\/g, "/")
+        );
         e.dataTransfer.setData("application/json", JSON.stringify(file));
 
         // Set dragging state for visual feedback
         setIsDragging(true);
 
-        // We'll avoid using native drag directly as it causes crashes
-        // Instead, we'll show a notification that the file path is copied
-        // This is a safer fallback approach
+        // Copy path to clipboard as a fallback
         navigator.clipboard
           .writeText(file.path)
           .then(() => {
@@ -115,22 +118,26 @@ export const FileItem: React.FC<FileItemProps> = ({
             console.error("Failed to copy file path during drag:", err);
           });
 
-        // If we're feeling brave, we can try the native drag, but with protection
+        // Use the native drag API through Electron
         if (window.electron && window.electron.startNativeDrag) {
-          try {
-            // Wrap in setTimeout to avoid blocking UI
-            setTimeout(() => {
-              window.electron.startNativeDrag([file.path]).catch(() => {
-                // Silently fail - we already have the clipboard fallback
-                console.log(
-                  "Native drag failed silently, using clipboard fallback"
-                );
-              });
-            }, 0);
-          } catch (nativeDragError) {
-            // Also silently fail - we have the clipboard fallback
-            console.log("Native drag throw error, using clipboard fallback");
-          }
+          console.log("Starting native drag for file:", file.path);
+
+          // We don't use setTimeout here to ensure immediate execution
+          window.electron
+            .startNativeDrag([file.path])
+            .then((success) => {
+              if (success) {
+                console.log("Native drag started successfully");
+              } else {
+                console.log("Native drag failed, using clipboard fallback");
+              }
+            })
+            .catch((err) => {
+              console.error("Error in startNativeDrag:", err);
+              console.log("Using clipboard fallback for drag operation");
+            });
+        } else {
+          console.warn("startNativeDrag is not available");
         }
       } catch (error) {
         console.error("Error in drag start:", error);

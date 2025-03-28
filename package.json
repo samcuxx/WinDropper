@@ -1,6 +1,6 @@
 {
     "name": "windropper",
-    "version": "0.1.0",
+    "version": "0.1.0-beta.1",
     "description": "A Windows alternative to macOS Dropover for temporary file stacking and management",
     "main": "dist/main/main.js",
     "scripts": {
