@@ -55,7 +55,7 @@ function createMainWindow() {
     // For debugging in production
     mainWindow.webContents.on(
       "did-fail-load",
-      (event, errorCode, errorDescription) => {
+      (_event, errorCode, errorDescription) => {
         console.error(`Failed to load: ${errorDescription} (${errorCode})`);
       }
     );
@@ -135,7 +135,7 @@ function createNotchWindow() {
     // For debugging in production
     notchWindow.webContents.on(
       "did-fail-load",
-      (event, errorCode, errorDescription) => {
+      (_event, errorCode, errorDescription) => {
         console.error(
           `Failed to load notch: ${errorDescription} (${errorCode})`
         );

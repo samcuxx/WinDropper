@@ -1,8 +1,10 @@
+<p align="center">
+  <img src="./public/icons/icon.png" alt="WinDropper Logo" width="200">
+</p>
+
 # WinDropper
 
 WinDropper is a Windows alternative to macOS Dropover, providing a convenient way to temporarily store files for easy organization and movement across different locations.
-
-![WinDropper Screenshot](screenshots/windropper-screenshot.png)
 
 ## Features
 
@@ -10,7 +12,7 @@ WinDropper is a Windows alternative to macOS Dropover, providing a convenient wa
 - **Smart File Organization:** Categorize files by type when moving them to destinations
 - **Floating Notch UI:** Minimalistic, resizable, and always-on-top window for quick access
 - **Context Menu Actions:** Quick actions for files including copying paths, opening containing folders
-- **Multi-File Management:** Move multiple files at once to destinations
+- **Multi-File Management:** Select and drag multiple files at once using checkboxes
 - **Keyboard Shortcuts:** Use CTRL+SHIFT+D to show/hide the WinDropper notch
 - **Customization:** Change appearance, behavior, and file management settings
 - **Dark/Light Mode Support:** Adapts to your system theme or manually selectable
@@ -44,6 +46,7 @@ WinDropper is a Windows alternative to macOS Dropover, providing a convenient wa
 2. **Drag Files:** Drag any files to the floating notch
 3. **Manage Files:** Right-click on files or the notch for options
 4. **Move Files:** Drag files back out to a new location or use the context menu to move them to predefined locations
+5. **Select Multiple Files:** Use the checkboxes to select files, then drag them as a group
 
 ### Keyboard Shortcuts
 
@@ -84,14 +87,29 @@ npm install
 3. Run in development mode:
 
 ```bash
+# Use the enhanced development environment
 npm run dev
+
+# Or use the simplified batch file on Windows
+dev.bat
 ```
+
+The enhanced development environment provides:
+
+- Automatic TypeScript compilation
+- Vite development server for the renderer
+- Automatic Electron startup when the server is ready
+- Interactive command interface:
+  - `restart` or `r` - Restart the Electron process
+  - `quit` or `q` - Exit the development environment
+  - `help` or `h` - Show available commands
 
 ### Building
 
 To build the application for distribution:
 
 ```bash
+# Build for current platform
 npm run build
 npm run package
 ```
